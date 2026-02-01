@@ -1,0 +1,30 @@
+{
+  "name": "fmu-as-a-mcp-server",
+  "version": "1.0.0",
+  "description": "FMU (Functional Mock-up Unit) as MCP Server - Virtual ECU with AI Agent",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "test": "npm run build && node examples/test-ecu.js"
+  },
+  "keywords": [
+    "FMU",
+    "MCP",
+    "Virtual ECU",
+    "AI Agent",
+    "OpenAI"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  }
+}
