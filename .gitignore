@@ -11,3 +11,11 @@ dist/
 *.o
 *.so
 *.a
+# Test FMU files
+test_*.fmu
+sample_*.fmu
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

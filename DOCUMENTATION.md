@@ -797,7 +797,419 @@ This section explains how to add MCP server capabilities to an existing FMU, ena
 
 ### Overview
 
-Adding MCP server to an existing FMU involves:
+There are two main approaches to add MCP server capabilities to existing FMUs:
+
+**Approach 1: Repackaging (Recommended for Vendor FMUs)**
+- Use the automated FMU repackaging tool
+- Preserves original FMU binaries and structure
+- Adds MCP wrapper as resource files
+- Compatible with FMPy and other FMI tools
+- Best for FMUs from Synopsys, Vector, dSPACE, ETAS, etc.
+
+**Approach 2: Creating a Custom Wrapper**
+- Build a new MCP server that wraps your FMU
+- Requires programming the FMI interface
+- Offers more customization options
+- Best for programmatic control and custom integration
+
+---
+
+## Approach 1: Repackaging Existing FMUs (Automated)
+
+### Introduction
+
+The FMU Repackaging Tool automatically adds MCP Server capabilities to existing FMUs created by industry-standard tools like:
+- **Synopsys** - Platform Architect
+- **Vector** - CANoe, PREEvision
+- **dSPACE** - TargetLink, SystemDesk
+- **ETAS** - ASCET, COSYM
+- Other FMI 2.0/3.0 compliant tools
+
+### Key Features
+
+✅ **Non-invasive**: Preserves original FMU binaries and functionality  
+✅ **FMPy Compatible**: Repackaged FMUs work with FMPy for simulation  
+✅ **MCP Enhanced**: Adds AI agent query capabilities  
+✅ **Standards Compliant**: Maintains FMI 2.0/3.0 compatibility  
+✅ **Automated**: Simple command-line tool, no manual editing  
+
+### Installation
+
+The repackaging tool is included in this repository. Ensure you have Python 3.9+ installed:
+
+```bash
+# Install required Python packages
+pip install fmpy lxml
+
+# The tool is ready to use
+python fmu_repackager.py --help
+```
+
+### Quick Start Guide
+
+#### Step 1: Create a Sample FMU (for testing)
+
+```bash
+# Create a sample vendor FMU for testing
+python fmu_repackager.py --create-sample my_vendor.fmu
+```
+
+This creates a sample FMU that simulates an ECU from vendor tools.
+
+#### Step 2: Repackage Your FMU
+
+```bash
+# Repackage an existing FMU with MCP capabilities
+python fmu_repackager.py --input my_vendor.fmu --output my_vendor_mcp.fmu
+```
+
+The tool will:
+1. Extract the existing FMU structure
+2. Parse `modelDescription.xml`
+3. Add MCP server variables
+4. Inject MCP wrapper scripts
+5. Repackage as a new FMU
+
+Output:
+```
+===========================================================
+FMU MCP Server Repackaging Tool
+===========================================================
+[1/6] Extracting FMU: my_vendor.fmu
+  ✓ Extracted to: /tmp/fmu_repackage_xyz
+[2/6] Parsing modelDescription.xml
+  ✓ FMI Version: 2.0
+  ✓ Model Name: VendorECU_Controller
+  ✓ GUID: {12345678-1234-1234-1234-123456789abc}
+[3/6] Adding MCP Server variables
+  ✓ Added MCP status variable (valueReference: 3)
+  ✓ Added MCP version variable (valueReference: 4)
+[4/6] Adding MCP Server wrapper
+  ✓ Created MCP config: mcp_config.json
+  ✓ Created MCP wrapper: mcp_wrapper.py
+  ✓ Created MCP README: MCP_README.txt
+[5/6] Updating modelDescription.xml
+  ✓ Updated modelDescription.xml
+[6/6] Repackaging FMU: my_vendor_mcp.fmu
+  ✓ Created repackaged FMU: my_vendor_mcp.fmu
+  ✓ Size: 3.45 KB
+===========================================================
+✓ Repackaging completed successfully!
+===========================================================
+Input FMU:  my_vendor.fmu
+Output FMU: my_vendor_mcp.fmu
+
+The repackaged FMU can now be loaded in FMPy:
+  from fmpy import simulate_fmu
+  simulate_fmu('my_vendor_mcp.fmu')
+```
+
+#### Step 3: Load in FMPy
+
+```python
+from fmpy import read_model_description, simulate_fmu
+
+# Read the repackaged FMU
+model_desc = read_model_description('my_vendor_mcp.fmu')
+print(f"Model: {model_desc.modelName}")
+print(f"FMI Version: {model_desc.fmiVersion}")
+
+# List all variables (including MCP variables)
+for var in model_desc.modelVariables:
+    print(f"  - {var.name}: {var.type}")
+
+# Simulate the FMU
+result = simulate_fmu('my_vendor_mcp.fmu')
+```
+
+### What Gets Added to Your FMU
+
+When you repackage an FMU, the following components are added:
+
+#### 1. MCP Server Variables (in modelDescription.xml)
+
+```xml
+<ScalarVariable 
+    name="mcp_server_status" 
+    valueReference="N+1"
+    description="MCP Server operational status"
+    causality="output" 
+    variability="discrete">
+    <String start="active"/>
+</ScalarVariable>
+
+<ScalarVariable 
+    name="mcp_server_version" 
+    valueReference="N+2"
+    description="MCP Server version"
+    causality="parameter" 
+    variability="fixed">
+    <String start="1.0.0"/>
+</ScalarVariable>
+```
+
+#### 2. MCP Configuration (resources/mcp_config.json)
+
+```json
+{
+  "enabled": true,
+  "version": "1.0.0",
+  "server_name": "fmu-mcp-wrapper",
+  "capabilities": {
+    "tools": true,
+    "resources": false,
+    "prompts": false
+  },
+  "original_fmu": "my_vendor.fmu",
+  "repackaged_timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+#### 3. MCP Wrapper Script (resources/mcp_wrapper.py)
+
+A Python script that provides MCP server functionality for querying the FMU.
+
+#### 4. Documentation (resources/MCP_README.txt)
+
+Instructions on how to use the MCP-enhanced FMU.
+
+### Advanced Usage
+
+#### Custom MCP Configuration
+
+Create a custom configuration file:
+
+```json
+{
+  "server_name": "custom-ecu-server",
+  "description": "Custom ECU with MCP capabilities",
+  "tools": {
+    "custom_tool_1": {
+      "enabled": true,
+      "description": "Custom functionality"
+    }
+  }
+}
+```
+
+Apply it during repackaging:
+
+```bash
+python fmu_repackager.py \
+    --input my_vendor.fmu \
+    --output my_vendor_mcp.fmu \
+    --mcp-config custom_mcp_config.json
+```
+
+#### Batch Repackaging
+
+Repackage multiple FMUs:
+
+```bash
+#!/bin/bash
+# batch_repackage.sh
+
+for fmu in vendor_fmus/*.fmu; do
+    basename=$(basename "$fmu" .fmu)
+    echo "Repackaging $basename..."
+    python fmu_repackager.py \
+        --input "$fmu" \
+        --output "repackaged/${basename}_mcp.fmu"
+done
+```
+
+### Vendor-Specific Considerations
+
+#### Synopsys Platform Architect
+
+- Export FMUs using FMI 2.0 for Co-Simulation
+- Ensure all required binaries are included
+- Test MCP integration with Platform Architect models
+
+```bash
+# Typical Synopsys FMU structure
+synopsys_model.fmu
+├── modelDescription.xml
+├── binaries/
+│   ├── linux64/libmodel.so
+│   └── win64/model.dll
+└── resources/
+    └── model_data.xml
+
+# After repackaging
+synopsys_model_mcp.fmu
+├── modelDescription.xml (MCP-enhanced)
+├── binaries/ (unchanged)
+├── resources/
+│   ├── model_data.xml (original)
+│   ├── mcp_config.json (new)
+│   ├── mcp_wrapper.py (new)
+│   └── MCP_README.txt (new)
+```
+
+#### Vector CANoe/PREEvision
+
+- Export RT models as FMUs
+- MCP integration works with CAN/LIN signals
+- Repackaged FMUs maintain Vector's signal database
+
+```python
+# Example: Query Vector CAN signals via MCP
+from fmpy import read_model_description
+
+model = read_model_description('vector_ecu_mcp.fmu')
+
+# Find CAN signals (now queryable via MCP)
+can_signals = [v for v in model.modelVariables 
+               if 'CAN' in v.description]
+print(f"Found {len(can_signals)} CAN signals")
+```
+
+#### dSPACE TargetLink/SystemDesk
+
+- Export production code models
+- MCP enables querying of model structure
+- Compatible with dSPACE real-time systems
+
+```bash
+# Repackage dSPACE FMU
+python fmu_repackager.py \
+    --input dspace_controller.fmu \
+    --output dspace_controller_mcp.fmu
+```
+
+#### ETAS ASCET/COSYM
+
+- ETAS ASCET models export to FMI 2.0
+- MCP integration for component queries
+- Maintains ETAS calibration parameters
+
+### Verification and Testing
+
+#### 1. Verify FMU Structure
+
+```bash
+# Check the repackaged FMU structure
+unzip -l my_vendor_mcp.fmu
+
+# Should show:
+# - modelDescription.xml
+# - binaries/...
+# - resources/mcp_config.json
+# - resources/mcp_wrapper.py
+# - resources/MCP_README.txt
+```
+
+#### 2. Validate with FMPy
+
+```python
+from fmpy import read_model_description
+from fmpy.validation import validate_fmu
+
+# Validate FMU structure
+problems = validate_fmu('my_vendor_mcp.fmu')
+if not problems:
+    print("✓ FMU is valid")
+else:
+    for problem in problems:
+        print(f"⚠ {problem}")
+
+# Read model description
+model = read_model_description('my_vendor_mcp.fmu')
+print(f"✓ Model: {model.modelName}")
+print(f"✓ Variables: {len(model.modelVariables)}")
+
+# Check for MCP variables
+mcp_vars = [v.name for v in model.modelVariables 
+            if 'mcp' in v.name.lower()]
+print(f"✓ MCP variables: {mcp_vars}")
+```
+
+#### 3. Test MCP Functionality
+
+```python
+# Test MCP wrapper directly
+import sys
+import json
+sys.path.insert(0, './extracted_fmu/resources')
+
+from mcp_wrapper import MCPWrapper
+
+wrapper = MCPWrapper('./extracted_fmu/resources/mcp_config.json')
+status = wrapper.get_status()
+print(json.dumps(status, indent=2))
+
+tools = wrapper.list_tools()
+print(f"Available MCP tools: {len(tools)}")
+```
+
+### Troubleshooting
+
+#### Issue: FMU extraction fails
+
+**Solution**: Ensure the input file is a valid ZIP-based FMU:
+```bash
+file my_vendor.fmu
+# Should output: Zip archive data
+```
+
+#### Issue: Missing modelDescription.xml
+
+**Solution**: The input FMU must contain a valid modelDescription.xml at the root level.
+
+#### Issue: FMPy cannot load repackaged FMU
+
+**Solution**: Check that original FMU binaries are present:
+```bash
+unzip -l my_vendor_mcp.fmu | grep binaries
+```
+
+#### Issue: MCP variables not found
+
+**Solution**: Verify the modelDescription.xml was updated:
+```bash
+unzip -p my_vendor_mcp.fmu modelDescription.xml | grep mcp_server
+```
+
+### CI/CD Integration
+
+The repackaging tool is integrated into the CI/CD pipeline for automated testing:
+
+```yaml
+# .github/workflows/ci.yml
+fmu-repackaging-test:
+  runs-on: ubuntu-latest
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: pip install fmpy lxml
+    
+    - name: Create sample FMU
+      run: python fmu_repackager.py --create-sample test.fmu
+    
+    - name: Repackage FMU
+      run: python fmu_repackager.py --input test.fmu --output test_mcp.fmu
+    
+    - name: Validate repackaged FMU
+      run: |
+        python -c "from fmpy.validation import validate_fmu; \
+                   problems = validate_fmu('test_mcp.fmu'); \
+                   exit(1 if problems else 0)"
+```
+
+---
+
+## Approach 2: Creating a Custom MCP Wrapper
+
+For developers who want more control, you can create a custom MCP server wrapper around your FMU.
+
+### Overview
+
+Adding MCP server to an existing FMU via custom wrapper involves:
 1. Creating an MCP server wrapper
 2. Mapping FMU functions to MCP tools
 3. Handling FMU-specific data types and protocols
