@@ -36,7 +36,7 @@ const server = new Server(
 const tools: Tool[] = [
   {
     name: "get_ecu_metadata",
-    description: "Get complete metadata about the Virtual ECU FMU including software, version, interfaces, and level",
+    description: "Get complete metadata about the Virtual ECU FMU including software, version, interfaces, level, and domain",
     inputSchema: {
       type: "object",
       properties: {},
@@ -82,6 +82,24 @@ const tools: Tool[] = [
   {
     name: "get_ecu_status",
     description: "Get the current operational status of the Virtual ECU",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_ecu_domain",
+    description: "Get the domain/application area of the Virtual ECU (e.g., Automotive, Industrial, HVAC)",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "list_ecu_functions",
+    description: "List all available functions in the Virtual ECU with their descriptions, parameters, and return types",
     inputSchema: {
       type: "object",
       properties: {},
@@ -188,6 +206,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: status,
+            },
+          ],
+        };
+      }
+
+      case "get_ecu_domain": {
+        const domain = virtualECU.getDomain();
+        return {
+          content: [
+            {
+              type: "text",
+              text: domain,
+            },
+          ],
+        };
+      }
+
+      case "list_ecu_functions": {
+        const functions = virtualECU.listFunctions();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(functions, null, 2),
             },
           ],
         };

@@ -2,13 +2,27 @@
 
 A Functional Mock-up Unit (FMU) virtual ECU embedded with AI agent capabilities, acting as a Model Context Protocol (MCP) server. This allows users to query ECU information like software version, interfaces, and capabilities using LLMs such as GitHub Copilot or OpenAI.
 
+[![CI/CD Pipeline](https://github.com/kushalkoppa/fmu-as-a-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/kushalkoppa/fmu-as-a-mcp-server/actions/workflows/ci.yml)
+
+## 📚 Documentation
+
+For comprehensive documentation, see **[DOCUMENTATION.md](DOCUMENTATION.md)** which includes:
+- Complete setup and installation guide
+- GitHub Copilot and OpenAI integration
+- **Guide for integrating MCP server into existing FMUs**
+- C implementation details
+- Architecture and design patterns
+- Troubleshooting and best practices
+
 ## Overview
 
 This project demonstrates a Virtual ECU FMU with:
-- **Basic arithmetic operations** (addition example)
+- **Basic arithmetic operations** (addition example with C source code)
 - **Queryable metadata** (software, version, interfaces, level)
 - **MCP server interface** for AI agent integration
 - **OpenAI/Copilot compatibility** for natural language queries
+- **CI/CD pipeline** with GitHub Actions
+- **Integration guide** for adding MCP to existing FMUs
 
 ## Features
 
@@ -17,6 +31,8 @@ This project demonstrates a Virtual ECU FMU with:
 - 📊 **Metadata Exposure**: Query SW version, interfaces, ECU level via natural language
 - 🔌 **OpenAI Compatible**: Works with OpenAI API and GitHub Copilot
 - 💻 **VS Code Integration**: First-class support for Visual Studio Code
+- ⚙️ **C Source Code**: Includes addition.c and addition.h for native implementation
+- 🔧 **Extensible**: Easy to integrate with existing FMUs
 
 ## Architecture
 
@@ -234,6 +250,21 @@ Response: "Virtual ECU Addition Unit"
 User: "What version?"
 Response: "1.0.0"
 
+User: "What domain is this ECU for?"
+Response: "Automotive - Basic Arithmetic Control Unit"
+
+User: "What functions are available in the FMU?"
+Response: Lists all functions with descriptions:
+  - add(a, b): Perform addition operation
+  - getMetadata(): Get complete ECU metadata
+  - getSoftware(): Get software name
+  - getVersion(): Get version number
+  - getInterfaces(): Get available interfaces
+  - getLevel(): Get capability level
+  - getStatus(): Get operational status
+  - getDomain(): Get domain/application area
+  - listFunctions(): List all available functions
+
 User: "What interfaces are available?"
 Response: ["addition", "metadata", "status"]
 
@@ -252,7 +283,16 @@ The Virtual ECU FMU provides the following metadata:
 - **Version**: 1.0.0
 - **Interfaces**: addition, metadata, status
 - **Level**: L2 - Basic Arithmetic Functions
+- **Domain**: Automotive - Basic Arithmetic Control Unit
 - **Description**: A virtual ECU FMU that provides basic addition functionality and queryable metadata
+
+### Available Functions
+
+Query the ECU with `@workspace What functions are available?` to get a complete list of:
+- Core arithmetic operations (addition)
+- Metadata query functions
+- Status and domain information
+- Function introspection capabilities
 
 ## Use Cases
 
