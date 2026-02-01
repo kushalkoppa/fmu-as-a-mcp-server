@@ -7,3 +7,7 @@ dist/
 *.swo
 *~
 .vscode/settings.json
+# C object files
+*.o
+*.so
+*.a
