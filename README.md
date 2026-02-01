@@ -1,429 +1,303 @@
-# FMU as a MCP Server - Virtual ECU with AI Agent
+# FMU as MCP Server (FaaMs)
 
-**FaaMs** (FMU as a MCP Server) is an innovative project that combines Functional Mockup Units (FMU), Model Context Protocol (MCP), and AI Agent capabilities to create an intelligent Virtual ECU (Electronic Control Unit).
+A Functional Mock-up Unit (FMU) virtual ECU embedded with AI agent capabilities, acting as a Model Context Protocol (MCP) server. This allows users to query ECU information like software version, interfaces, and capabilities using LLMs such as GitHub Copilot or OpenAI.
 
-## 🌟 Overview
+## Overview
 
-This project implements a Virtual ECU that:
-- Acts as an MCP server exposing queryable tools
-- Provides AI-powered natural language interface via OpenAI
-- Demonstrates basic ECU functionality (addition operations)
-- Supports standard automotive communication interfaces
-- Integrates seamlessly with GitHub Copilot and VS Code
+This project demonstrates a Virtual ECU FMU with:
+- **Basic arithmetic operations** (addition example)
+- **Queryable metadata** (software, version, interfaces, level)
+- **MCP server interface** for AI agent integration
+- **OpenAI/Copilot compatibility** for natural language queries
 
-## 🏗️ Architecture
+## Features
+
+- 🚗 **Virtual ECU Implementation**: Simulates an Electronic Control Unit with addition functionality
+- 🤖 **AI Agent Integration**: MCP server enables LLM-based queries
+- 📊 **Metadata Exposure**: Query SW version, interfaces, ECU level via natural language
+- 🔌 **OpenAI Compatible**: Works with OpenAI API and GitHub Copilot
+- 💻 **VS Code Integration**: First-class support for Visual Studio Code
+
+## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│         User (VS Code + Copilot)            │
-└─────────────────┬───────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────┐
-│          MCP Server (server.py)             │
-│  ┌───────────────────────────────────────┐  │
-│  │  Tools:                               │  │
-│  │  - get_ecu_info                       │  │
-│  │  - get_software_version               │  │
-│  │  - get_interfaces                     │  │
-│  │  - get_ecu_level                      │  │
-│  │  - perform_addition                   │  │
-│  │  - get_ecu_status                     │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────┬───────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────┐
-│       Virtual ECU (fmu_model.py)            │
-│  ┌───────────────────────────────────────┐  │
-│  │  - Version: 1.0.0                     │  │
-│  │  - Level: Level_2                     │  │
-│  │  - Interfaces: CAN, LIN, Ethernet,    │  │
-│  │    FlexRay                            │  │
-│  │  - Operations: Addition, Processing   │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────┐
-│       AI Agent (ai_agent.py)                │
-│         OpenAI Integration                  │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│         User (via LLM/Copilot)          │
+└────────────────┬────────────────────────┘
+                 │ Natural Language Query
+                 ↓
+┌─────────────────────────────────────────┐
+│         MCP Server Interface            │
+│  (Model Context Protocol)               │
+└────────────────┬────────────────────────┘
+                 │ Tool Calls
+                 ↓
+┌─────────────────────────────────────────┐
+│         Virtual ECU (FMU)               │
+│  - Addition Unit                        │
+│  - Metadata (SW, Version, Interfaces)   │
+│  - Status Monitoring                    │
+└─────────────────────────────────────────┘
 ```
 
-## 📋 Features
+## Prerequisites
 
-### Virtual ECU Capabilities
-- **Software Information**: Query software name, version, and manufacturer
-- **Interface Support**: CAN, LIN, Ethernet, FlexRay communication protocols
-- **ECU Level**: Configurable ECU level (Level_1, Level_2, etc.)
-- **Arithmetic Operations**: Demonstration addition functionality
-- **Real-time Status**: Monitor ECU operational status
+- Node.js (v18 or higher)
+- npm (Node Package Manager)
+- Visual Studio Code (recommended)
+- GitHub Copilot extension (for VS Code integration)
+- OpenAI API key (optional, for direct OpenAI integration)
 
-### MCP Server Tools
-1. **get_ecu_info**: Get comprehensive ECU information
-2. **get_software_version**: Query software version
-3. **get_interfaces**: List supported communication interfaces
-4. **get_ecu_level**: Get the ECU level
-5. **perform_addition**: Execute addition operations
-6. **get_ecu_status**: Check ECU operational status
+## Installation
 
-### AI Agent Features
-- Natural language queries via OpenAI
-- Context-aware responses about ECU specifications
-- Intelligent command execution
-- Integration with GitHub Copilot
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/kushalkoppa/fmu-as-a-mcp-server.git
+   cd fmu-as-a-mcp-server
+   ```
 
-## 🚀 Quick Start
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-### Prerequisites
-- Python 3.8 or higher
-- Visual Studio Code
-- GitHub Copilot (optional but recommended)
-- OpenAI API key (for AI agent features)
+3. **Build the project**:
+   ```bash
+   npm run build
+   ```
 
-### Installation
+## Setup in Visual Studio Code
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/kushalkoppa/fmu-as-a-mcp-server.git
-cd fmu-as-a-mcp-server
-```
+### Step 1: Open the Project
 
-2. **Create a virtual environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-4. **Configure environment variables**
-```bash
-cp .env.example .env
-# Edit .env and add your OpenAI API key
-```
-
-## 💻 Usage
-
-### Running the MCP Server
-
-```bash
-python server.py
-```
-
-The MCP server will start and listen for requests via stdio.
-
-### Using the AI Agent
-
-```bash
-python ai_agent.py
-```
-
-This will run example queries demonstrating the AI agent's capabilities.
-
-### Example Queries
-
-```python
-from ai_agent import FMU_AI_Agent
-
-agent = FMU_AI_Agent()
-
-# Query software version
-response = agent.query("What software version is running?")
-
-# Query interfaces
-response = agent.query("What interfaces does the ECU support?")
-
-# Perform addition
-response = agent.query_with_action("Can you add 25 and 17?")
-
-# Query ECU level
-response = agent.query("What is the ECU level?")
-```
-
-## 📝 VS Code Integration
-
-### Step 1: Open in VS Code
-
-1. Open Visual Studio Code
-2. Go to **File** > **Open Folder**
+1. Launch Visual Studio Code
+2. Open the project folder: `File > Open Folder...`
 3. Select the `fmu-as-a-mcp-server` directory
-4. VS Code will recommend installing extensions (Python, Copilot)
 
-### Step 2: Install Recommended Extensions
+### Step 2: Configure GitHub Copilot for MCP
 
-When you open the project, VS Code will prompt you to install recommended extensions:
-- **GitHub Copilot** - AI pair programmer
-- **GitHub Copilot Chat** - Chat interface for Copilot
-- **Python** - Python language support
-- **Pylance** - Python language server
+1. **Install GitHub Copilot extension** if not already installed:
+   - Open Extensions (`Ctrl+Shift+X` or `Cmd+Shift+X` on Mac)
+   - Search for "GitHub Copilot"
+   - Click "Install"
 
-Click **Install All** to set up your environment.
+2. **Configure MCP Settings**:
+   - Open VS Code Settings (`Ctrl+,` or `Cmd+,` on Mac)
+   - Search for "MCP" or "Model Context Protocol"
+   - Add the FMU MCP server configuration
 
-### Step 3: Configure Python Interpreter
+3. **Alternative: Use the provided MCP config**:
+   - The project includes `.vscode/mcp-config.json`
+   - Copy this to your VS Code user settings or workspace settings
 
-1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
-2. Type "Python: Select Interpreter"
-3. Choose the virtual environment: `./venv/bin/python`
+### Step 3: Set Up OpenAI API Key (Optional)
 
-### Step 4: Set up MCP Server for Copilot
+If you want to use OpenAI directly:
 
-1. Open VS Code settings (`Ctrl+,` or `Cmd+,`)
-2. Search for "MCP"
-3. Add the MCP server configuration from `mcp-config.json`
+1. Create a `.env` file in the project root:
+   ```bash
+   OPENAI_API_KEY=your-api-key-here
+   ```
 
-Alternatively, you can configure it in your Copilot settings:
+2. Or set it as an environment variable:
+   ```bash
+   export OPENAI_API_KEY=your-api-key-here
+   ```
 
-**For Claude Desktop or MCP-compatible clients:**
-Add to your MCP configuration file:
+## Running the MCP Server
 
-```json
-{
-  "mcpServers": {
-    "fmu-virtual-ecu": {
-      "command": "python",
-      "args": [
-        "/path/to/fmu-as-a-mcp-server/server.py"
-      ],
-      "env": {
-        "PYTHONPATH": "/path/to/fmu-as-a-mcp-server"
-      }
+### Option 1: Direct Execution
+```bash
+npm run dev
+```
+
+### Option 2: Using VS Code Debugger
+1. Press `F5` or go to `Run > Start Debugging`
+2. Select "Launch FMU MCP Server"
+3. The server will start and listen for MCP connections
+
+### Option 3: As a Background Service
+```bash
+npm start
+```
+
+## Querying with GitHub Copilot
+
+Once the MCP server is running and configured in VS Code, you can ask Copilot natural language questions:
+
+### Example Queries:
+
+1. **Query ECU Software**:
+   ```
+   @workspace What software is running on the Virtual ECU?
+   ```
+
+2. **Query ECU Version**:
+   ```
+   @workspace What version is the Virtual ECU FMU?
+   ```
+
+3. **Query Available Interfaces**:
+   ```
+   @workspace What interfaces does the Virtual ECU provide?
+   ```
+
+4. **Query ECU Level**:
+   ```
+   @workspace What is the level of the Virtual ECU?
+   ```
+
+5. **Use the Addition Function**:
+   ```
+   @workspace Can you add 15 and 27 using the Virtual ECU?
+   ```
+
+6. **Get Complete Metadata**:
+   ```
+   @workspace Show me all the metadata for the Virtual ECU
+   ```
+
+## Available MCP Tools
+
+The FMU MCP server exposes the following tools:
+
+| Tool Name | Description |
+|-----------|-------------|
+| `get_ecu_metadata` | Get complete metadata (SW, version, interfaces, level) |
+| `get_ecu_software` | Get the software name |
+| `get_ecu_version` | Get the version number |
+| `get_ecu_interfaces` | Get available interfaces list |
+| `get_ecu_level` | Get the ECU capability level |
+| `get_ecu_status` | Get current operational status |
+| `add_numbers` | Perform addition operation (a + b) |
+
+## Using with OpenAI API Directly
+
+You can also interact with the FMU MCP server using OpenAI's API:
+
+```javascript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Example: Query ECU metadata
+const response = await openai.chat.completions.create({
+  model: "gpt-4",
+  messages: [
+    {
+      role: "user",
+      content: "What is the software and version of the Virtual ECU?"
     }
-  }
-}
+  ],
+  tools: [
+    // MCP tools would be registered here
+  ]
+});
 ```
 
-## 🤖 Using with GitHub Copilot
-
-### Querying the Virtual ECU via Copilot
-
-Once the MCP server is configured, you can use GitHub Copilot Chat to query your Virtual ECU:
-
-1. **Open Copilot Chat** (Click the chat icon in the sidebar or press `Ctrl+Alt+I`)
-
-2. **Ask questions about the ECU:**
-
-```
-@workspace What software version is the Virtual ECU running?
-```
-
-```
-@workspace What interfaces does the Virtual ECU support?
-```
-
-```
-@workspace Can you use the ECU to add 42 and 58?
-```
-
-```
-@workspace What is the ECU level of this virtual unit?
-```
-
-3. **Copilot will use the MCP server tools to:**
-   - Query ECU information
-   - Execute operations
-   - Provide contextual responses
-
-### Example Copilot Interactions
-
-**Query 1: Get ECU Information**
-```
-User: @workspace Show me the Virtual ECU information
-Copilot: [Uses get_ecu_info tool]
-Response: The Virtual ECU is running software version 1.0.0 
-at Level_2. It supports CAN, LIN, Ethernet, and FlexRay 
-interfaces...
-```
-
-**Query 2: Perform Calculation**
-```
-User: @workspace Add 123 and 456 using the ECU
-Copilot: [Uses perform_addition tool]
-Response: Addition Result: 123 + 456 = 579
-```
-
-**Query 3: Check Status**
-```
-User: @workspace What's the status of the Virtual ECU?
-Copilot: [Uses get_ecu_status tool]
-Response: ECU Status: Active
-Timestamp: 2026-02-01T14:55:00...
-```
-
-## 🔗 OpenAI Integration
-
-### Setting up OpenAI Connection
-
-1. **Get an OpenAI API Key**
-   - Visit https://platform.openai.com/api-keys
-   - Create a new API key
-   - Copy the key
-
-2. **Configure the API Key**
-   - Edit the `.env` file
-   - Add your API key:
-   ```
-   OPENAI_API_KEY=sk-your-actual-api-key-here
-   ```
-
-3. **Choose Your Model**
-   - Default: GPT-4 (more accurate, slower)
-   - Alternative: GPT-3.5-turbo (faster, cheaper)
-   
-   Edit `ai_agent.py` to change the model:
-   ```python
-   self.model = "gpt-3.5-turbo"  # Or "gpt-4"
-   ```
-
-### Using the AI Agent
-
-The AI agent provides a natural language interface to the Virtual ECU:
-
-```python
-from ai_agent import FMU_AI_Agent
-
-# Initialize the agent
-agent = FMU_AI_Agent()
-
-# Ask questions in natural language
-response = agent.query("What can this ECU do?")
-print(response)
-
-# The AI will respond based on ECU context:
-# "This Virtual ECU (Level_2) can perform addition operations,
-#  process data in real-time, and communicate via CAN, LIN,
-#  Ethernet, and FlexRay interfaces..."
-```
-
-### AI Agent Features
-
-- **Context-Aware**: The AI knows all ECU specifications
-- **Natural Language**: Ask questions conversationally
-- **Action Execution**: Can trigger ECU operations
-- **Educational**: Explains ECU concepts and capabilities
-
-## 📚 Project Structure
+## Project Structure
 
 ```
 fmu-as-a-mcp-server/
-├── .vscode/                    # VS Code configuration
-│   ├── extensions.json         # Recommended extensions
-│   └── settings.json           # Workspace settings
-├── fmu_model.py               # Virtual ECU implementation
-├── server.py                  # MCP server
-├── ai_agent.py               # OpenAI integration
-├── requirements.txt          # Python dependencies
-├── package.json             # Project metadata
-├── .env.example            # Environment variables template
-├── mcp-config.json        # MCP server configuration
-├── SETUP_GUIDE.md         # Detailed setup instructions
-└── README.md             # This file
+├── src/
+│   ├── index.ts              # MCP server implementation
+│   └── virtual-ecu.ts        # Virtual ECU FMU implementation
+├── .vscode/
+│   ├── launch.json           # VS Code debug configuration
+│   └── mcp-config.json       # MCP server configuration
+├── dist/                     # Compiled JavaScript output
+├── package.json              # Project dependencies
+├── tsconfig.json             # TypeScript configuration
+└── README.md                 # This file
 ```
 
-## 🔧 API Reference
+## Development
 
-### Virtual ECU Methods
-
-```python
-ecu = VirtualECU()
-
-# Get comprehensive information
-info = ecu.get_info()
-
-# Get software version
-version = ecu.get_version()  # Returns: "1.0.0"
-
-# Get supported interfaces
-interfaces = ecu.get_interfaces()  # Returns: ["CAN", "LIN", ...]
-
-# Get ECU level
-level = ecu.get_ecu_level()  # Returns: "Level_2"
-
-# Perform addition
-result = ecu.add(10, 20)  # Returns: 30.0
-
-# Get status
-status = ecu.get_status()
-```
-
-### MCP Server Tools
-
-All tools are accessible via the MCP protocol:
-
-1. `get_ecu_info` - No parameters
-2. `get_software_version` - No parameters
-3. `get_interfaces` - No parameters
-4. `get_ecu_level` - No parameters
-5. `perform_addition` - Parameters: `a` (number), `b` (number)
-6. `get_ecu_status` - No parameters
-
-## 🎯 Use Cases
-
-1. **Educational**: Learn about ECU architecture and automotive software
-2. **Development**: Prototype and test ECU functionality
-3. **Integration**: Test MCP server capabilities
-4. **AI Research**: Explore AI-enhanced automotive systems
-5. **Simulation**: Virtual ECU for testing without hardware
-
-## 🛠️ Development
-
-### Running Tests
-
+### Building
 ```bash
-# Run the AI agent examples
-python ai_agent.py
-
-# Test the MCP server (in another terminal)
-python server.py
+npm run build
 ```
 
-### Extending the ECU
-
-To add new capabilities:
-
-1. **Add methods to `fmu_model.py`**
-```python
-def multiply(self, a: float, b: float) -> float:
-    return a * b
+### Development Mode (auto-rebuild)
+```bash
+npm run dev
 ```
 
-2. **Add MCP tools in `server.py`**
-```python
-types.Tool(
-    name="perform_multiplication",
-    description="Multiply two numbers",
-    inputSchema={...}
-)
+## Example Interaction
+
+```
+User: "What software is running on the ECU?"
+Response: "Virtual ECU Addition Unit"
+
+User: "What version?"
+Response: "1.0.0"
+
+User: "What interfaces are available?"
+Response: ["addition", "metadata", "status"]
+
+User: "What level is this ECU?"
+Response: "L2 - Basic Arithmetic Functions"
+
+User: "Add 25 and 17"
+Response: "Result: 25 + 17 = 42"
 ```
 
-3. **Update AI agent context in `ai_agent.py`**
+## ECU Metadata Details
 
-## 🤝 Contributing
+The Virtual ECU FMU provides the following metadata:
 
-Contributions are welcome! Please feel free to submit pull requests or open issues.
+- **Software**: Virtual ECU Addition Unit
+- **Version**: 1.0.0
+- **Interfaces**: addition, metadata, status
+- **Level**: L2 - Basic Arithmetic Functions
+- **Description**: A virtual ECU FMU that provides basic addition functionality and queryable metadata
 
-## 📄 License
+## Use Cases
+
+1. **Development & Testing**: Test ECU interfaces without physical hardware
+2. **AI-Assisted Diagnostics**: Query ECU information using natural language
+3. **Documentation**: Automatically document ECU capabilities via AI
+4. **Training**: Learn about ECU systems with interactive AI queries
+5. **Integration Testing**: Validate MCP server integration with various LLMs
+
+## Troubleshooting
+
+### MCP Server Not Connecting
+- Ensure the server is built: `npm run build`
+- Check that Node.js v18+ is installed: `node --version`
+- Verify the server is running: `npm start`
+
+### Copilot Not Recognizing MCP Tools
+- Restart VS Code after configuring MCP settings
+- Check that GitHub Copilot extension is up to date
+- Verify MCP configuration in `.vscode/mcp-config.json`
+
+### OpenAI API Issues
+- Verify your API key is set correctly
+- Check API key permissions and quotas
+- Ensure you have a valid OpenAI account
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
 
 MIT License - See LICENSE file for details
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Model Context Protocol (MCP) by Anthropic
-- OpenAI for AI capabilities
-- GitHub Copilot for development assistance
-- FMI Standard for inspiration
+- FMU (Functional Mock-up Interface) standards
+- OpenAI for LLM capabilities
+- GitHub Copilot for AI-assisted development
 
-## 📞 Support
+## Contact
 
-For questions or issues:
-- Open an issue on GitHub
-- Check the SETUP_GUIDE.md for detailed instructions
-- Review example queries in ai_agent.py
+For questions or support, please open an issue on GitHub.
 
 ---
 
-**Built with ❤️ using Python, MCP, and OpenAI**
+**Note**: This is a demonstration project showing how FMU virtual ECUs can be integrated with AI agents through MCP. The addition operation is a simple example - real ECUs would have more complex functionality.

@@ -1,282 +1,379 @@
-# FMU Virtual ECU Architecture
+# Architecture & Design
 
-## System Architecture Diagram
+## System Architecture
+
+The FMU-as-a-MCP-Server system consists of three main layers:
+
+### 1. Virtual ECU Layer (FMU Implementation)
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         USER LAYER                                │
-│                                                                    │
-│  ┌───────────────┐        ┌──────────────┐                       │
-│  │  VS Code      │        │   Terminal   │                       │
-│  │  + Copilot    │        │   Scripts    │                       │
-│  └───────┬───────┘        └──────┬───────┘                       │
-│          │                       │                                │
-└──────────┼───────────────────────┼────────────────────────────────┘
-           │                       │
-           │  MCP Protocol         │  Direct Python
-           │  (stdio/JSON-RPC)     │  Import
-           ▼                       ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                      APPLICATION LAYER                            │
-│                                                                    │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                MCP Server (server.py)                     │   │
-│  │  ┌────────────────────────────────────────────────────┐  │   │
-│  │  │  MCP Tools:                                        │  │   │
-│  │  │  • get_ecu_info                                    │  │   │
-│  │  │  • get_software_version                            │  │   │
-│  │  │  • get_interfaces                                  │  │   │
-│  │  │  • get_ecu_level                                   │  │   │
-│  │  │  • perform_addition                                │  │   │
-│  │  │  • get_ecu_status                                  │  │   │
-│  │  └────────────┬───────────────────────────────────────┘  │   │
-│  └───────────────┼──────────────────────────────────────────┘   │
-│                  │                                               │
-│  ┌───────────────┼──────────────────────────────────────────┐   │
-│  │               │       AI Agent (ai_agent.py)             │   │
-│  │               │       ┌──────────────────┐               │   │
-│  │               │       │  OpenAI Client   │               │   │
-│  │               │       │   GPT-3.5/GPT-4  │               │   │
-│  │               │       └────────┬─────────┘               │   │
-│  │               │                │                          │   │
-│  │               │       Natural Language                    │   │
-│  │               │       Query Processing                    │   │
-│  │               │                │                          │   │
-│  └───────────────┼────────────────┼──────────────────────────┘   │
-│                  │                │                               │
-└──────────────────┼────────────────┼───────────────────────────────┘
-                   │                │
-                   ▼                ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                       DOMAIN LAYER                                │
-│                                                                    │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │           Virtual ECU (fmu_model.py)                      │   │
-│  │                                                            │   │
-│  │  ECU Attributes:                                          │   │
-│  │  • Software: Virtual ECU - Addition Module                │   │
-│  │  • Version: 1.0.0                                         │   │
-│  │  • ECU Level: Level_2                                     │   │
-│  │  • Manufacturer: FMU-MCP-Server                           │   │
-│  │                                                            │   │
-│  │  Supported Interfaces:                                    │   │
-│  │  ┌──────┐ ┌──────┐ ┌──────────┐ ┌──────────┐            │   │
-│  │  │ CAN  │ │ LIN  │ │ Ethernet │ │ FlexRay  │            │   │
-│  │  └──────┘ └──────┘ └──────────┘ └──────────┘            │   │
-│  │                                                            │   │
-│  │  ECU Operations:                                          │   │
-│  │  • add(a, b) → a + b                                      │   │
-│  │  • get_info() → ECU metadata                              │   │
-│  │  • get_version() → version string                         │   │
-│  │  • get_interfaces() → interface list                      │   │
-│  │  • get_ecu_level() → ECU level                            │   │
-│  │  • get_status() → operational status                      │   │
-│  │                                                            │   │
-│  │  Capabilities:                                            │   │
-│  │  • Addition                                               │   │
-│  │  • Data Processing                                        │   │
-│  │  • Real-time Response                                     │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────┘
-                           ▲
-                           │
-                  Internal State & Logic
+┌───────────────────────────────────────┐
+│         Virtual ECU (FMU)             │
+│  ┌─────────────────────────────────┐  │
+│  │  Addition Unit                  │  │
+│  │  - add(a, b): number            │  │
+│  └─────────────────────────────────┘  │
+│  ┌─────────────────────────────────┐  │
+│  │  Metadata Storage               │  │
+│  │  - software: string             │  │
+│  │  - version: string              │  │
+│  │  - interfaces: string[]         │  │
+│  │  - level: string                │  │
+│  │  - description: string          │  │
+│  └─────────────────────────────────┘  │
+│  ┌─────────────────────────────────┐  │
+│  │  Query Methods                  │  │
+│  │  - getMetadata()                │  │
+│  │  - getSoftware()                │  │
+│  │  - getVersion()                 │  │
+│  │  - getInterfaces()              │  │
+│  │  - getLevel()                   │  │
+│  │  - getStatus()                  │  │
+│  └─────────────────────────────────┘  │
+└───────────────────────────────────────┘
+```
+
+**File**: `src/virtual-ecu.ts`
+
+**Responsibilities**:
+- Implement core FMU functionality (addition)
+- Store and manage ECU metadata
+- Provide query methods for metadata access
+- Maintain ECU operational state
+
+### 2. MCP Server Layer
+
+```
+┌────────────────────────────────────────┐
+│       MCP Server Interface             │
+│  ┌──────────────────────────────────┐  │
+│  │  Tool Registration               │  │
+│  │  - get_ecu_metadata              │  │
+│  │  - get_ecu_software              │  │
+│  │  - get_ecu_version               │  │
+│  │  - get_ecu_interfaces            │  │
+│  │  - get_ecu_level                 │  │
+│  │  - get_ecu_status                │  │
+│  │  - add_numbers                   │  │
+│  └──────────────────────────────────┘  │
+│  ┌──────────────────────────────────┐  │
+│  │  Request Handlers                │  │
+│  │  - ListTools                     │  │
+│  │  - CallTool                      │  │
+│  └──────────────────────────────────┘  │
+│  ┌──────────────────────────────────┐  │
+│  │  Transport Layer (stdio)         │  │
+│  │  - StdioServerTransport          │  │
+│  └──────────────────────────────────┘  │
+└────────────────────────────────────────┘
+```
+
+**File**: `src/index.ts`
+
+**Responsibilities**:
+- Expose Virtual ECU through MCP protocol
+- Register tools for each ECU capability
+- Handle MCP requests (list tools, call tool)
+- Manage stdio communication transport
+- Error handling and response formatting
+
+### 3. Client/AI Layer
+
+```
+┌────────────────────────────────────────┐
+│         Client Applications            │
+│  ┌──────────────────────────────────┐  │
+│  │  GitHub Copilot                  │  │
+│  │  (in VS Code)                    │  │
+│  └──────────────────────────────────┘  │
+│  ┌──────────────────────────────────┐  │
+│  │  OpenAI API                      │  │
+│  │  (GPT-4, GPT-3.5)                │  │
+│  └──────────────────────────────────┘  │
+│  ┌──────────────────────────────────┐  │
+│  │  Custom MCP Clients              │  │
+│  │  (test-client.js)                │  │
+│  └──────────────────────────────────┘  │
+└────────────────────────────────────────┘
 ```
 
 ## Data Flow
 
-### 1. MCP Query Flow
+### Query Flow (e.g., "What software is running?")
 
 ```
-User (Copilot)
-    │
-    │ "What is the ECU version?"
-    ▼
-MCP Server
-    │
-    │ parse request → call tool
-    ▼
-Virtual ECU
-    │
-    │ get_version()
-    │
-    │ return "1.0.0"
-    ▼
-MCP Server
-    │
-    │ format response
-    ▼
-User (Copilot)
-    │
-    │ Display: "Version: 1.0.0"
+User Query
+    ↓
+┌─────────────────────┐
+│  LLM (Copilot/GPT)  │
+│  Understands intent │
+└─────────┬───────────┘
+          ↓
+   Decides to use tool:
+   "get_ecu_software"
+          ↓
+┌─────────────────────┐
+│   MCP Server        │
+│   Receives request  │
+└─────────┬───────────┘
+          ↓
+   Calls ECU method:
+   virtualECU.getSoftware()
+          ↓
+┌─────────────────────┐
+│   Virtual ECU       │
+│   Returns: "Virtual │
+│   ECU Addition Unit"│
+└─────────┬───────────┘
+          ↓
+   Response packaged
+   as MCP result
+          ↓
+┌─────────────────────┐
+│   MCP Server        │
+│   Returns to client │
+└─────────┬───────────┘
+          ↓
+   LLM formats response
+          ↓
+┌─────────────────────┐
+│   User sees:        │
+│   "The software     │
+│   running is Virtual│
+│   ECU Addition Unit"│
+└─────────────────────┘
 ```
 
-### 2. AI Agent Query Flow
+### Addition Operation Flow (e.g., "Add 10 and 20")
 
 ```
-User (Python script)
-    │
-    │ "What can this ECU do?"
-    ▼
-AI Agent
-    │
-    │ get ECU context → build prompt
-    ▼
-OpenAI API
-    │
-    │ GPT-4 processing
-    │
-    │ return AI response
-    ▼
-AI Agent
-    │
-    │ format & return
-    ▼
-User
-    │
-    │ Display: "The ECU can perform addition,
-    │           process data, and communicate
-    │           via CAN, LIN, Ethernet..."
-```
-
-### 3. Addition Operation Flow
-
-```
-User
-    │
-    │ "Add 42 and 58"
-    ▼
-MCP Server / AI Agent
-    │
-    │ perform_addition(42, 58)
-    ▼
-Virtual ECU
-    │
-    │ add(42, 58)
-    │
-    │ Calculate: 42 + 58 = 100
-    │
-    │ return 100
-    ▼
-MCP Server / AI Agent
-    │
-    │ format result
-    ▼
-User
-    │
-    │ Display: "Result: 100"
+User: "Add 10 and 20"
+    ↓
+LLM interprets as:
+tool: "add_numbers"
+args: {a: 10, b: 20}
+    ↓
+MCP Server receives
+CallTool request
+    ↓
+Server calls:
+virtualECU.add(10, 20)
+    ↓
+Virtual ECU computes:
+result = 30
+    ↓
+MCP Server formats:
+"Result: 10 + 20 = 30"
+    ↓
+LLM presents to user:
+"The result is 30"
 ```
 
 ## Component Details
 
-### Virtual ECU (fmu_model.py)
-- **Purpose**: Core ECU simulation
-- **Type**: Python class
-- **State**: Maintains ECU configuration and status
-- **Operations**: Addition, info queries, status checks
+### Virtual ECU (virtual-ecu.ts)
 
-### MCP Server (server.py)
-- **Purpose**: Expose ECU via MCP protocol
-- **Protocol**: JSON-RPC over stdio
-- **Tools**: 6 queryable tools
-- **Integration**: Works with Copilot, Claude, etc.
+**Core Class**: `VirtualECU`
 
-### AI Agent (ai_agent.py)
-- **Purpose**: Natural language interface
-- **Backend**: OpenAI GPT-3.5/GPT-4
-- **Features**: Context-aware responses, action execution
-- **Use Case**: Conversational ECU interaction
-
-## File Structure
-
-```
-fmu-as-a-mcp-server/
-├── fmu_model.py           # Domain Layer - ECU implementation
-├── server.py              # Application Layer - MCP server
-├── ai_agent.py            # Application Layer - AI integration
-├── example_usage.py       # Examples - Direct usage
-├── test_implementation.py # Testing - Validation
-├── requirements.txt       # Dependencies
-├── .env.example           # Configuration template
-├── mcp-config.json        # MCP client configuration
-├── quickstart.sh          # Quick setup script
-├── README.md              # Main documentation
-├── SETUP_GUIDE.md         # Detailed setup
-├── COPILOT_USAGE.md       # Copilot examples
-├── ARCHITECTURE.md        # This file
-├── LICENSE                # MIT License
-├── .vscode/               # VS Code configuration
-│   ├── extensions.json    # Recommended extensions
-│   └── settings.json      # Workspace settings
-└── .gitignore            # Git ignore rules
+**Properties**:
+```typescript
+private metadata: ECUMetadata {
+  software: string;
+  version: string;
+  interfaces: string[];
+  level: string;
+  description: string;
+}
 ```
 
-## Technology Stack
+**Methods**:
+- `add(a: number, b: number): number` - Core arithmetic operation
+- `getMetadata(): ECUMetadata` - Returns complete metadata
+- `getSoftware(): string` - Returns software name
+- `getVersion(): string` - Returns version string
+- `getInterfaces(): string[]` - Returns available interfaces
+- `getLevel(): string` - Returns ECU capability level
+- `getStatus(): string` - Returns operational status
 
-### Core Technologies
-- **Python 3.8+**: Programming language
-- **MCP (Model Context Protocol)**: Server framework
-- **OpenAI API**: AI capabilities
-- **pydantic**: Data validation
+### MCP Server (index.ts)
 
-### Development Tools
-- **VS Code**: IDE
-- **GitHub Copilot**: AI pair programming
-- **Git**: Version control
+**Server Configuration**:
+```typescript
+{
+  name: "fmu-mcp-server",
+  version: "1.0.0",
+  capabilities: { tools: {} }
+}
+```
 
-### Communication Protocols
-- **JSON-RPC**: MCP communication
-- **stdio**: Standard input/output
-- **REST**: OpenAI API calls
+**Registered Tools**:
+1. `get_ecu_metadata` - No parameters
+2. `get_ecu_software` - No parameters
+3. `get_ecu_version` - No parameters
+4. `get_ecu_interfaces` - No parameters
+5. `get_ecu_level` - No parameters
+6. `get_ecu_status` - No parameters
+7. `add_numbers` - Parameters: `a: number, b: number`
+
+**Request Handlers**:
+- `ListToolsRequestSchema` - Returns list of available tools
+- `CallToolRequestSchema` - Executes requested tool
+
+## Communication Protocol
+
+### MCP Protocol Over stdio
+
+The server uses **stdio** (standard input/output) for communication:
+
+```
+Client → stdin → MCP Server
+MCP Server → stdout → Client
+MCP Server → stderr → Logs
+```
+
+### Message Format
+
+**Tool List Request**:
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 1
+}
+```
+
+**Tool List Response**:
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "tools": [
+      {
+        "name": "get_ecu_metadata",
+        "description": "Get complete metadata...",
+        "inputSchema": {...}
+      },
+      ...
+    ]
+  },
+  "id": 1
+}
+```
+
+**Tool Call Request**:
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "add_numbers",
+    "arguments": {"a": 10, "b": 20}
+  },
+  "id": 2
+}
+```
+
+**Tool Call Response**:
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Result: 10 + 20 = 30"
+      }
+    ]
+  },
+  "id": 2
+}
+```
 
 ## Extension Points
 
-### Adding New ECU Operations
+### Adding New ECU Functionality
 
-1. **Update fmu_model.py**:
-```python
-def multiply(self, a: float, b: float) -> float:
-    return a * b
+1. **Add method to VirtualECU**:
+```typescript
+multiply(a: number, b: number): number {
+  return a * b;
+}
 ```
 
-2. **Add MCP Tool in server.py**:
-```python
-types.Tool(
-    name="perform_multiplication",
-    description="Multiply two numbers",
-    inputSchema={...}
-)
+2. **Register tool in MCP server**:
+```typescript
+{
+  name: "multiply_numbers",
+  description: "Multiply two numbers",
+  inputSchema: {
+    type: "object",
+    properties: {
+      a: { type: "number" },
+      b: { type: "number" }
+    },
+    required: ["a", "b"]
+  }
+}
 ```
 
-3. **Update AI Agent context** in ai_agent.py
+3. **Add handler in CallToolRequestSchema**:
+```typescript
+case "multiply_numbers": {
+  const result = virtualECU.multiply(args.a, args.b);
+  return {
+    content: [{ type: "text", text: `Result: ${result}` }]
+  };
+}
+```
 
-### Supporting New Interfaces
+### Adding New Metadata Fields
 
-1. Add to interfaces list in `VirtualECU.__init__()`
-2. Document in README
-3. Update tests
+1. **Update ECUMetadata interface**:
+```typescript
+export interface ECUMetadata {
+  // existing fields...
+  manufacturer: string;
+  hardwareVersion: string;
+}
+```
 
-### Adding ECU Capabilities
+2. **Update VirtualECU constructor**:
+```typescript
+this.metadata = {
+  // existing fields...
+  manufacturer: "Virtual Systems Inc.",
+  hardwareVersion: "HW1.0"
+};
+```
 
-1. Extend capabilities list
-2. Implement new methods
-3. Expose via MCP tools
-4. Update documentation
+3. **Add getter methods and MCP tools as needed**
 
 ## Security Considerations
 
-- ✅ API keys stored in `.env` (not committed)
-- ✅ Input validation via pydantic
-- ✅ No direct system access from MCP
-- ✅ Read-only operations (safe queries)
+1. **Input Validation**: All tool arguments are validated before execution
+2. **Error Handling**: Errors are caught and returned safely to clients
+3. **No External Dependencies**: Virtual ECU has no external system dependencies
+4. **Sandboxed Execution**: MCP server runs in isolated Node.js process
+5. **API Key Protection**: Environment variables for sensitive data
 
 ## Performance Characteristics
 
-- **MCP Server**: Lightweight, stdio-based
-- **ECU Operations**: O(1) for all current operations
-- **AI Agent**: Network-dependent (OpenAI API)
-- **Memory**: Minimal (~10MB for Python + dependencies)
+- **Latency**: < 10ms for simple queries (metadata, status)
+- **Addition Operation**: < 1ms computation time
+- **Memory Footprint**: ~50MB (Node.js + dependencies)
+- **Concurrency**: Single-threaded (stdio transport limitation)
+- **Scalability**: One MCP server instance per client connection
 
----
+## Future Enhancements
 
-**Design Philosophy**: Simple, extensible, well-documented
+1. **More Arithmetic Operations**: Subtract, multiply, divide
+2. **Complex ECU Functions**: Signal processing, CAN bus simulation
+3. **State Management**: Persistent ECU state across sessions
+4. **Multiple Virtual ECUs**: Support multiple ECU instances
+5. **WebSocket Transport**: Support for web-based clients
+6. **Monitoring Dashboard**: Real-time ECU status visualization
+7. **Test Suite**: Comprehensive unit and integration tests
+8. **Docker Support**: Containerized deployment
+9. **CI/CD Pipeline**: Automated testing and deployment
+10. **Performance Metrics**: Built-in telemetry and monitoring
