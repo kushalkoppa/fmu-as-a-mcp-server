@@ -11,3 +11,6 @@ dist/
 *.o
 *.so
 *.a
+# Test FMU files
+test_*.fmu
+sample_*.fmu

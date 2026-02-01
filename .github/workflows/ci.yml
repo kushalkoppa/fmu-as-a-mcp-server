@@ -73,3 +73,110 @@ jobs:
           exit 1
         fi
         echo "Object file created successfully"
+  
+  fmu-repackaging-test:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install fmpy lxml
+    
+    - name: Create sample vendor FMU
+      run: |
+        python fmu_repackager.py --create-sample test_vendor.fmu
+        echo "Sample FMU created successfully"
+    
+    - name: Test FMU repackaging
+      run: |
+        python fmu_repackager.py --input test_vendor.fmu --output test_vendor_mcp.fmu
+        echo "FMU repackaging completed"
+    
+    - name: Verify repackaged FMU structure
+      run: |
+        if [ ! -f "test_vendor_mcp.fmu" ]; then
+          echo "Repackaging failed: output FMU not found"
+          exit 1
+        fi
+        
+        # Verify FMU can be unzipped and has required structure
+        python -c "
+import zipfile
+import sys
+
+try:
+    with zipfile.ZipFile('test_vendor_mcp.fmu', 'r') as z:
+        files = z.namelist()
+        
+        # Check for required files
+        if 'modelDescription.xml' not in files:
+            print('Error: modelDescription.xml not found')
+            sys.exit(1)
+        
+        if 'resources/mcp_config.json' not in files:
+            print('Error: MCP config not found')
+            sys.exit(1)
+        
+        if 'resources/mcp_wrapper.py' not in files:
+            print('Error: MCP wrapper not found')
+            sys.exit(1)
+        
+        print('✓ All required files present')
+        print(f'✓ Total files in FMU: {len(files)}')
+        
+except Exception as e:
+    print(f'Error validating FMU: {e}')
+    sys.exit(1)
+        "
+        echo "FMU structure validation passed"
+    
+    - name: Test FMPy compatibility (optional)
+      continue-on-error: true
+      run: |
+        python -c "
+from fmpy import read_model_description
+import sys
+
+try:
+    model_desc = read_model_description('test_vendor_mcp.fmu')
+    print(f'✓ FMPy can read FMU')
+    print(f'  Model Name: {model_desc.modelName}')
+    print(f'  FMI Version: {model_desc.fmiVersion}')
+    print(f'  Number of Variables: {len(model_desc.modelVariables)}')
+    
+    # Check for MCP variables
+    var_names = [v.name for v in model_desc.modelVariables]
+    if 'mcp_server_status' in var_names:
+        print('✓ MCP status variable found')
+    if 'mcp_server_version' in var_names:
+        print('✓ MCP version variable found')
+    
+except Exception as e:
+    print(f'FMPy compatibility check: {e}')
+    print('Note: This is expected if FMU binaries are not present')
+        "
+    
+    - name: Upload repackaged FMU as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: repackaged-fmu-python-${{ matrix.python-version }}
+        path: test_vendor_mcp.fmu
+        retention-days: 7

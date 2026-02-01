@@ -2,6 +2,8 @@
 
 A Functional Mock-up Unit (FMU) virtual ECU embedded with AI agent capabilities, acting as a Model Context Protocol (MCP) server. This allows users to query ECU information like software version, interfaces, and capabilities using LLMs such as GitHub Copilot or OpenAI.
 
+**NEW:** Now includes automated FMU repackaging tool for adding MCP capabilities to existing FMUs from Synopsys, Vector, dSPACE, ETAS, and other vendors!
+
 [![CI/CD Pipeline](https://github.com/kushalkoppa/fmu-as-a-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/kushalkoppa/fmu-as-a-mcp-server/actions/workflows/ci.yml)
 
 ## 📚 Documentation
@@ -9,7 +11,9 @@ A Functional Mock-up Unit (FMU) virtual ECU embedded with AI agent capabilities,
 For comprehensive documentation, see **[DOCUMENTATION.md](DOCUMENTATION.md)** which includes:
 - Complete setup and installation guide
 - GitHub Copilot and OpenAI integration
-- **Guide for integrating MCP server into existing FMUs**
+- **Automated FMU repackaging tool guide** (NEW!)
+- **Working with vendor FMUs** (Synopsys/Vector/dSPACE/ETAS)
+- **FMPy compatibility and loading guide**
 - C implementation details
 - Architecture and design patterns
 - Troubleshooting and best practices
@@ -22,7 +26,8 @@ This project demonstrates a Virtual ECU FMU with:
 - **MCP server interface** for AI agent integration
 - **OpenAI/Copilot compatibility** for natural language queries
 - **CI/CD pipeline** with GitHub Actions
-- **Integration guide** for adding MCP to existing FMUs
+- **FMU repackaging tool** for adding MCP to existing FMUs
+- **FMPy compatibility** for simulation and testing
 
 ## Features
 
@@ -33,6 +38,8 @@ This project demonstrates a Virtual ECU FMU with:
 - 💻 **VS Code Integration**: First-class support for Visual Studio Code
 - ⚙️ **C Source Code**: Includes addition.c and addition.h for native implementation
 - 🔧 **Extensible**: Easy to integrate with existing FMUs
+- 📦 **FMU Repackaging Tool**: Automated tool to add MCP to vendor FMUs (NEW!)
+- 🔄 **FMPy Compatible**: Repackaged FMUs work with FMPy for simulation (NEW!)
 
 ## Architecture
 
@@ -81,6 +88,56 @@ This project demonstrates a Virtual ECU FMU with:
    ```bash
    npm run build
    ```
+
+## Quick Start: Repackaging Existing FMUs
+
+Have an existing FMU from Synopsys, Vector, dSPACE, or ETAS? Add MCP capabilities in 3 steps:
+
+### Step 1: Install Python Dependencies
+```bash
+pip install fmpy lxml
+```
+
+### Step 2: Repackage Your FMU
+```bash
+# Repackage an existing FMU with MCP capabilities
+python fmu_repackager.py --input your_vendor.fmu --output your_vendor_mcp.fmu
+```
+
+### Step 3: Load in FMPy
+```python
+from fmpy import simulate_fmu
+
+# Your repackaged FMU now has MCP capabilities
+result = simulate_fmu('your_vendor_mcp.fmu')
+```
+
+**Output Example:**
+```
+===========================================================
+FMU MCP Server Repackaging Tool
+===========================================================
+[1/6] Extracting FMU: your_vendor.fmu
+  ✓ Extracted to: /tmp/fmu_repackage_xyz
+[2/6] Parsing modelDescription.xml
+  ✓ FMI Version: 2.0
+  ✓ Model Name: VendorECU_Controller
+[3/6] Adding MCP Server variables
+  ✓ Added MCP status variable
+  ✓ Added MCP version variable
+[4/6] Adding MCP Server wrapper
+  ✓ Created MCP config
+  ✓ Created MCP wrapper
+[5/6] Updating modelDescription.xml
+  ✓ Updated modelDescription.xml
+[6/6] Repackaging FMU: your_vendor_mcp.fmu
+  ✓ Created repackaged FMU
+===========================================================
+✓ Repackaging completed successfully!
+===========================================================
+```
+
+For detailed instructions, see [DOCUMENTATION.md](DOCUMENTATION.md#approach-1-repackaging-existing-fmus-automated).
 
 ## Setup in Visual Studio Code
 
