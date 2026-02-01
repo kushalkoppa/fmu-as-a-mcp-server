@@ -3,10 +3,10 @@
     "fmu-virtual-ecu": {
       "command": "python",
       "args": [
-        "/home/runner/work/fmu-as-a-mcp-server/fmu-as-a-mcp-server/server.py"
+        "server.py"
       ],
       "env": {
-        "PYTHONPATH": "/home/runner/work/fmu-as-a-mcp-server/fmu-as-a-mcp-server"
+        "PYTHONPATH": "."
       }
     }
   }
