@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fmu-virtual-ecu": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/dist/index.js"
+      ],
+      "env": {
+        "OPENAI_API_KEY": "${env:OPENAI_API_KEY}"
+      }
+    }
+  }
+}
